@@ -1,0 +1,3 @@
+CreateFileA windows.h
+CloseHandle windows.h
+WriteFile windows.h
