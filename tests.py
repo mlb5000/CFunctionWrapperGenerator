@@ -10,11 +10,13 @@ PATH_SEPARATOR = ';' if os.name == 'nt' else ':'
 
 CPP_FILES = (
     os.path.join(CPP_FILE_FOLDER, 'main.cpp'),
+    os.path.join(CPP_FILE_FOLDER, 'MasterExample.cpp'),
     os.path.join(CPP_FILE_FOLDER, 'Example.cpp'),
     )#os.path.join(CPP_FILE_FOLDER, 'ExampleUnitTests.cpp'))
     
 OBJ_FILES = (
     os.path.join(CPP_BUILD_FOLDER, 'main.obj'),
+    os.path.join(CPP_BUILD_FOLDER, 'MasterExample.obj'),
     os.path.join(CPP_BUILD_FOLDER, 'Example.obj'),
     )#os.path.join(CPP_FILE_FOLDER, 'ExampleUnitTests.obj'))
 
@@ -58,7 +60,8 @@ class TestGenerationCompilation(unittest.TestCase):
         
         subprocess.check_call(TEST_EXE)
         
-        self.assertTrue(os.path.exists('testFile.txt'))
+        self.assertTrue(open('testFile.txt', 'rt').read() == 'yay!!')
+        self.assertTrue(open('masterTestFile.txt', 'rt').read() == 'hooray!!')
 
 if __name__ == '__main__':
     unittest.main()

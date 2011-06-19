@@ -66,6 +66,9 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
         if generateGmock:
             mock_classes += generateMock(prototype, base_namespace, funcPrefix)
     
+    interface_classes += generateMasterInterface(prototypes, base_namespace)
+    component_classes += generateMasterWrapper(prototypes, base_namespace, component_namespace, funcPrefix, component_suffix)
+    
     with open(os.path.join(full_interface_dir, 'ICWrappers.h'), 'wt') as file:
         file.write(texttemplates.INTERFACE_FILE_TEMPLATE.format(
             base_namespace,
@@ -91,6 +94,41 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
             base_namespace,
             mock_classes))
 
+def generateMasterWrapper(prototypes, base_namespace, component_namespace, funcPrefix, component_suffix):
+    functions = ''
+    
+    for prototype in prototypes:
+        functions += texttemplates.COMPONENT_FUNCTION_TEMPLATE.format(
+            prototype.return_type(),
+            funcPrefix,
+            prototype.function_name(),
+            getArgs(prototype),
+            'const',
+            getArgNames(prototype))
+        functions += '    '
+    
+    className = 'MasterCWrapper'
+    
+    return texttemplates.INHERITING_CLASS_TEMPLATE.format(
+        getFullyQualifiedName((base_namespace, component_namespace, className)),
+        getFullyQualifiedName((base_namespace, 'I' + className)),
+        functions,
+        className)
+
+def generateMasterInterface(prototypes, base_namespace):
+    wrappers = []
+    
+    for p in prototypes:
+        wrappers.append('I' + p.function_name())
+    
+    className = 'IMasterCWrapper'
+    
+    return texttemplates.INHERITING_CLASS_TEMPLATE.format(
+        getFullyQualifiedName((base_namespace, className)),
+        ',\n    public '.join(wrappers),
+        '',
+        className)
+
 def getNamespaceHierarchy(prototypes, hierarchy, component_suffix):
     namespaces = hierarchy.split('::')
     ns_template = 'namespace {0}\n'
@@ -106,6 +144,7 @@ def getNamespaceHierarchy(prototypes, hierarchy, component_suffix):
     
     hierarchy += ' ' * ident
     hierarchy += str('\n' + ' ' * ident).join(list(map(lambda x : class_template.format(x.function_name()), prototypes)))
+    hierarchy += str('\n' + ' ' * ident) + class_template.format('MasterC')
     hierarchy += '\n'
     ident -= tab
     
@@ -131,6 +170,8 @@ def getClassDefinitions(prototypes, indent = 4):
     names = []
     for prototype in prototypes:
         names.append('class {0};'.format('I' + prototype.function_name()))
+    
+    names.append('class IMasterCWrapper;')
     
     base = '\n' + (' ' * indent)
     
@@ -404,12 +445,12 @@ def generateComponent(prototype, base_namespace, component_namespace, funcPrefix
         function,
         className)
 
-def getArgNames(prototype):
+def getArgNames(prototype, ident=12):
     arglist = []
     for arg in prototype.args():
         arglist.append(arg.arg_name())
     
-    base = ',\n'
+    base = ',\n' + ' ' * ident
     return base.join(arglist)
 
 def generateMock(prototype, base_namespace, funcPrefix):
