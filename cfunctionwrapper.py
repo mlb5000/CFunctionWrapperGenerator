@@ -1,9 +1,11 @@
 import loadpath
 import os
+import sys
 import texttemplates
 import glob
 import subprocess
 import re
+import getopt
 from pycparser import parse_file
 from pycparser import c_parser
 from pycparser import c_ast
@@ -11,32 +13,44 @@ from pycparser import plyparser
 
 PATH_SEPARATOR = ';' if os.name == 'nt' else ':'
 
-'''
+USAGE = 'Usage:\n\n' + __file__ + ''' functionList [-i include_path] [-n] [-b base_namespace]
+        [-m mock_namespace] [-c component_namespace] [-p funcPrefix]
+        [-s component_suffix] [-i base_include] [-t interface_dir]
+        [-o component_dir] [-k mock_dir]'''
+
+DESCRIPTION = '''
 Generate C++ C-function wrapper classes
 
-PRE: The INCLUDE environment variable must be set 
-function_file           Path to a file containing a list of C function names to wrap
-include_path            C compiler include path.  This should be a list of 
-                        directories separated by ';' on Windows and ':' on Unix
-generateGmock           Whether or not to generate GMock style mock classes
-base_namespace          Base class namespace
-mock_namespace          Name of mock namespace.  Fully qualified namespace will
-                        become base_namespace::mock_namespace
-component_namespace     Name of component namespace.  Fully qualified namespace will
-                        become base_namespace::component_namespace
-funcPrefix              Prefix to wrapper functions.  This is used to keep from
-                        colliding with the wrapped C function
-component_suffix        Suffix that will be appended to class names generated
-                        Component classes
-base_include            Base include directory where generated wrappers will
-                        be stored
-interface_dir           Directory (relative to base_include) where the ICWrappers
-                        interface file should be written to
-component_dir           Directory (relative to base_include) where the component
-                        CWrappers file should be written to
-mock_dir                Directory (relative to base_include) where the mock
-                        CWrappers file should be written to.  Must be different
-                        than component_dir.
+PRE: The INCLUDE environment variable must be set
+
+-n = Disable generateGmock
+
+function_file           [Required] Path to a file containing a list of C function
+                        names to wrap
+include_path            [Default: The INCLUDE environment variable] C compiler
+                        include path.  This should be a list of directories
+                        separated by ';' on Windows and ':' on Unix
+generateGmock           [Default: True] Whether or not to generate GMock style
+                        mock classes
+base_namespace          [Default: ''] Base class namespace
+mock_namespace          [Default: 'Mock'] Name of mock namespace. Fully qualified
+                        namespace will become base_namespace::mock_namespace
+component_namespace     [Default: 'Component'] Name of component namespace. Fully
+                        qualified namespace will become
+                        base_namespace::component_namespace
+funcPrefix              [Default: 'my'] Prefix to wrapper functions. This is used
+                        to prevent colliding with the wrapped C function
+component_suffix        [Default: 'Wrapper'] Suffix that will be appended to class
+                        names of generated Component classes
+base_include            [Default: 'src/Base'] Base include directory where generated
+                        wrappers will be stored
+interface_dir           [Default: ''] Directory (relative to base_include) where
+                        the ICWrappers interface file will be written
+component_dir           [Default: 'Component'] Directory (relative to base_include)
+                        where the component CWrappers file should be written to
+mock_dir                [Default: 'Mock'] Directory (relative to base_include) where
+                        the mock CWrappers file should be written to.  Must be
+                        different than component_dir.
 '''
 def generate(function_file, include_path = '', generateGmock=True, base_namespace = '', mock_namespace = 'Mock', component_namespace = 'Component', funcPrefix='my', component_suffix = 'Wrapper', base_include = 'src/Base', interface_dir='', component_dir='Component', mock_dir='Mock'):
     if include_path == '':
@@ -54,29 +68,37 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
         mkdirIfNotExist(full_mock_dir)
         
     functionsToWrap = getFunctions(function_file)
+    print('Parsing files')
     prototypes, found_files = getFunctionASTs(include_path, functionsToWrap)
     
     interface_classes = ''
     mock_classes = ''
     component_classes = ''
     
+    print('Generating wrappers')
     for prototype in prototypes:
         interface_classes += generateInterface(prototype, base_namespace, funcPrefix)
         component_classes += generateComponent(prototype, base_namespace, component_namespace, funcPrefix, component_suffix)
         if generateGmock:
             mock_classes += generateMock(prototype, base_namespace, funcPrefix)
     
+    print('Generating master interface')
     interface_classes += generateMasterInterface(prototypes, base_namespace)
+    print('Generating master wrapper component')
     component_classes += generateMasterWrapper(prototypes, base_namespace, component_namespace, funcPrefix, component_suffix)
     
-    with open(os.path.join(full_interface_dir, 'ICWrappers.h'), 'wt') as file:
+    interface_file = os.path.join(full_interface_dir, 'ICWrappers.h')
+    print('Generating interface file {0}'.format(interface_file))
+    with open(interface_file, 'wt') as file:
         file.write(texttemplates.INTERFACE_FILE_TEMPLATE.format(
             base_namespace,
             interface_classes,
             getClassDefinitions(prototypes),
             getIncludes(found_files)))
     
-    with open(os.path.join(full_component_dir, 'CWrappers.h'), 'wt') as file:
+    component_file = os.path.join(full_component_dir, 'CWrappers.h')
+    print('Generating component file {0}'.format(component_file))
+    with open(component_file, 'wt') as file:
         file.write(texttemplates.COMPONENT_FILE_TEMPLATE.format(
             base_namespace,
             getIncludes(found_files),
@@ -89,10 +111,14 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     if not generateGmock:
         return
     
-    with open(os.path.join(full_mock_dir, 'CWrappers.h'), 'wt') as file:
+    mock_file = os.path.join(full_mock_dir, 'CWrappers.h')
+    print('Generating mock file {0}'.format(mock_file))
+    with open(mock_file, 'wt') as file:
         file.write(texttemplates.GMOCK_FILE_TEMPLATE.format(
             base_namespace,
             mock_classes))
+    
+    print('Done!')
 
 def generateMasterWrapper(prototypes, base_namespace, component_namespace, funcPrefix, component_suffix):
     functions = ''
@@ -455,3 +481,53 @@ def getArgNames(prototype, ident=12):
 
 def generateMock(prototype, base_namespace, funcPrefix):
     return ''
+
+def usage():
+    print(USAGE + '\n' + DESCRIPTION)
+
+    ''' functionList [-i include_path] [-n] [-b base_namespace]
+        [-m mock_namespace] [-c component_namespace] [-p funcPrefix]
+        [-s component_suffix] [-i base_include] [-t interface_dir]
+        [-o component_dir] [-k mock_dir]'''
+        
+if __name__ == '__main__':
+    try:
+        filename = sys.argv[1]
+    except:
+        usage()
+    
+    if (len(sys.argv) > 2):
+        try:
+            opts, args = getopt.getopt(sys.argv[2:], 'i:nb:m:c:p:s:i:t:o:k:', ['include_path=', 'disableGMock', 'base_namespace=', 'mock_namespace=', 'component_namespace=', 'funcPrefix=', 'component_suffix=', 'base_include=', 'interface_dir=', 'component_dir=', 'mock_dir='])
+        except getopt.GetoptError as err:
+            print(err)
+            usage()
+            sys.exit(2)
+    
+    kwargs = {}
+    
+    for o, a in opts:
+        if o in ('-i', '--include_path'):
+            kwargs['include_path'] = a
+        elif o in ('-n', '--disableGMock'):
+            kwargs['generateGmock'] = False
+        elif o in ('-b', '--base_namespace'):
+            kwargs['base_namespace'] = a
+        elif o in ('-m', '--mock_namespace'):
+            kwargs['mock_namespace'] = a
+        elif o in ('-c', '--component_namespace'):
+            kwargs['component_namespace'] = a
+        elif o in ('-p', '--funcPrefix'):
+            kwargs['funcPrefix'] = a
+        elif o in ('-s', '--component_suffix'):
+            kwargs['component_suffix'] = a
+        elif o in ('-i', '--base_include'):
+            kwargs['base_include'] = a
+        elif o in ('-t', '--interface_dir'):
+            kwargs['interface_dir'] = a
+        elif o in ('-o', '--component_dir'):
+            kwargs['component_dir'] = a
+        elif o in ('-k', '--mock_dir'):
+            kwargs['mock_dir'] = a
+    
+    generate(filename, *kwargs)
