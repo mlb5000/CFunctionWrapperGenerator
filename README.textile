@@ -1,0 +1,55 @@
+h1.  C++ C-Function Wrapper Generator (CFWG)
+
+h2.  Purpose
+
+Dependency-injection in C++ is not convenient, especially when you bring "Free" C functions into the mix.  There are several approaches you can use to isolate these functions, but the one I've had the most success with is to create C++ classes whose sole purpose is to wrap calls to C functions.  This approach works quite well, particularly when paired with the "googlemock":http://code.google.com/p/googlemock/ C++ Mocking framework.
+
+I've been doing this for some time and have started to feel some pain in the maintenance area.  Wrapper functions are starting to be duplicated between wrapper modules, and classes depending on wrappers are importing functions that they'll never call.  But most of all, building out and maintaining these wrapper classes takes time and is extremely tedious.  So being the lazy developer that I am, I wrote CFWG to do the heavy lifting for me.
+
+h2.  Requirements
+
+CFWG requires Python 3.X (namely the str.format function).
+
+h2.  Usage
+
+cfunctionwrapper.py functionList [-i include_path] [-n] [-b base_namespace]
+        [-m mock_namespace] [-c component_namespace] [-p funcPrefix]
+        [-s component_suffix] [-i base_include] [-t interface_dir]
+        [-o component_dir] [-k mock_dir]
+        
+Generate C++ C-function wrapper classes
+
+PRE: The INCLUDE environment variable must be set
+
+-n = Disable generateGmock
+
+function_file           [Required] Path to a file containing a list of C function
+                        names to wrap
+include_path            [Default: The INCLUDE environment variable] C compiler
+                        include path.  This should be a list of directories
+                        separated by ';' on Windows and ':' on Unix
+generateGmock           [Default: True] Whether or not to generate GMock style
+                        mock classes
+base_namespace          [Default: ''] Base class namespace
+mock_namespace          [Default: 'Mock'] Name of mock namespace. Fully qualified
+                        namespace will become base_namespace::mock_namespace
+component_namespace     [Default: 'Component'] Name of component namespace. Fully
+                        qualified namespace will become
+                        base_namespace::component_namespace
+funcPrefix              [Default: 'my'] Prefix to wrapper functions. This is used
+                        to prevent colliding with the wrapped C function
+component_suffix        [Default: 'Wrapper'] Suffix that will be appended to class
+                        names of generated Component classes
+base_include            [Default: 'src/Base'] Base include directory where generated
+                        wrappers will be stored
+interface_dir           [Default: ''] Directory (relative to base_include) where
+                        the ICWrappers interface file will be written
+component_dir           [Default: 'Component'] Directory (relative to base_include)
+                        where the component CWrappers file should be written to
+mock_dir                [Default: 'Mock'] Directory (relative to base_include) where
+                        the mock CWrappers file should be written to.  Must be
+                        different than component_dir.
+
+h2.  Limitations
+
+CFWG depends heavily on pycparser 2.04, which depends on ply 3.4, both of which are supplied in the distribution under the New BSD and BSD licenses, respectively.  On Windows, pycparser was unable to parse a preprocessed windows.h file without substantial sanitizations in the preprocessed output.  Until pycparser is updated to be a bit more resilient (which I have high hopes for), users will need to run the headers containing their C functions through the C Preprocessor and run them through pycparser by hand to be sure it can successfully parse them.  Once parsing completes successfully, you can store the preprocessed file in the same directory as cwrappergenerator.py with the extension .i.  For example, windows.i is the preprocessed output of running windows.h through the preprocessor.

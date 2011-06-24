@@ -162,4 +162,6 @@ COMPONENT_FUNCTION_TEMPLATE = \
 {2} = Return type
 {3} = Function argument type and names list
 '''
-GMOCK_DECLARATION_TEMPLATE = '{0}({1}, {2}({3}));'
+GMOCK_DECLARATION_TEMPLATE = '''{0}({1}, {2}({3}));
+
+'''

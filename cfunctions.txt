@@ -1,3 +1,4 @@
-CreateFileA windows.h
-CloseHandle windows.h
-WriteFile windows.h
+CreateFileA winbase.h windows.h
+CloseHandle winbase.h windows.h
+WriteFile winbase.h windows.h
+CreateEnvironmentBlock userenv.h userenv.h
