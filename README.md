@@ -22,7 +22,7 @@ cfunctionwrapper.py Command-line Usage
 Precondition: The INCLUDE environment variable must be set if you do not specify the '-i' parameter.
 
     function_file           [Required] Path to a file containing a list of C function names to wrap.  This file contains a
-    number of lines in the format: 
+                            number of lines in the format: 
 
     <function> <actual_header> <include_header>
 
