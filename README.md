@@ -84,7 +84,7 @@ So how does this look?
         IWriteFile &m_writeFile;
         ICloseHandle &m_closeHandle;
     };
-
+ 
     /* Component class (provides dependencies through individual linkage) */
     class Component::FooIndividual
     {
@@ -98,7 +98,7 @@ So how does this look?
         
         Unit::Foo m_unit;
     };
-
+ 
     /* Component class (provides dependencies through master wrapper) */
     class Component::FooMaster
     {
