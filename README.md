@@ -16,7 +16,7 @@ CFWG requires Python 3.X (namely the str.format function).
 
 cfunctionwrapper.py Command-line Usage
 
-cfunctionwrapper.py functionList [-i include_path] [-n] [-b base_namespace] [-m mock_namespace] [-c component_namespace] [-p funcPrefix] [-s component_suffix] [-i base_include] [-t interface_dir] [-o component_dir] [-k mock_dir]
+    cfunctionwrapper.py functionList [-i include_path] [-n] [-b base_namespace] [-m mock_namespace] [-c component_namespace] [-p funcPrefix] [-s component_suffix] [-i base_include] [-t interface_dir] [-o component_dir] [-k mock_dir]
 
 Precondition: The INCLUDE environment variable must be set
 
