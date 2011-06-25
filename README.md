@@ -71,6 +71,8 @@ So how does this look?
 
 _Unit/Foo.h_
 
+    #include <ICWrappers.h>
+    
     /* Unit class (has dependencies) */
     class Unit::Foo
     {
@@ -89,6 +91,8 @@ _Unit/Foo.h_
 
 _Component/FooIndividual.h_
 
+    #include <Component/CWrappers.h>
+    
     /* Component class (provides dependencies through individual linkage) */
     class Component::FooIndividual
     {
@@ -105,6 +109,8 @@ _Component/FooIndividual.h_
 
 _Component/FooMaster.h_
 
+    #include <Component/CWrappers.h>
+    
     /* Component class (provides dependencies through master wrapper) */
     class Component::FooMaster
     {
@@ -123,6 +129,8 @@ Now, Foo.bar() can just call its C functions through the interfaces
 
 _Unit/Foo.cpp_
 
+    #include <Unit/Foo.h>
+    
     void
     Unit::Foo::Bar()
     {
