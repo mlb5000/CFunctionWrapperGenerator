@@ -22,7 +22,8 @@ Precondition: The INCLUDE environment variable must be set
 
     -n = Disable generateGmock
 
-    function_file           [Required] Path to a file containing a list of C function names to wrap.  This file contains a number of lines in the format: 
+    function_file           [Required] Path to a file containing a list of C function names to wrap.  This file contains a
+    number of lines in the format: 
 
     <function> <actual_header> <include_header>
 
@@ -32,27 +33,34 @@ Precondition: The INCLUDE environment variable must be set
 
     See the provided cfunctions.txt file for examples.
 
-    include_path            [Default: The INCLUDE environment variable] C compiler include path.  This should be a list of directories separated by ';' on Windows and ':' on Unix
+    include_path            [Default: The INCLUDE environment variable] C compiler include path.  This should be a list of
+                            directories separated by ';' on Windows and ':' on Unix
 
     generateGmock           [Default: True] Whether or not to generate GMock style mock classes
 
     base_namespace          [Default: ''] Base class namespace
 
-    mock_namespace          [Default: 'Mock'] Name of mock namespace. Fully qualified namespace will become base_namespace::mock_namespace
+    mock_namespace          [Default: 'Mock'] Name of mock namespace. Fully qualified namespace will become
+                             base_namespace::mock_namespace
 
-    component_namespace     [Default: 'Component'] Name of component namespace. Fully qualified namespace will become base_namespace::component_namespace
+    component_namespace     [Default: 'Component'] Name of component namespace. Fully qualified namespace will become
+                            base_namespace::component_namespace
 
-    funcPrefix              [Default: 'my'] Prefix to wrapper functions. This is used to prevent colliding with the wrapped C function
+    funcPrefix              [Default: 'my'] Prefix to wrapper functions. This is used to prevent colliding with the wrapped
+                            C function
 
     component_suffix        [Default: 'Wrapper'] Suffix that will be appended to class names of generated Component classes
 
     base_include            [Default: 'src/Base'] Base include directory where generated wrappers will be stored
 
-    interface_dir           [Default: ''] Directory (relative to base_include) where the ICWrappers interface file will be written
+    interface_dir           [Default: ''] Directory (relative to base_include) where the ICWrappers interface file will be
+                            written
 
-    component_dir           [Default: 'Component'] Directory (relative to base_include) where the component CWrappers file should be written to
+    component_dir           [Default: 'Component'] Directory (relative to base_include) where the component CWrappers file
+                            should be written
 
-    mock_dir                [Default: 'Mock'] Directory (relative to base_include) where the mock CWrappers file should be written to. Must be different than component_dir.
+    mock_dir                [Default: 'Mock'] Directory (relative to base_include) where the mock CWrappers file should be
+                            written. Must be different than component_dir.
 
 h2.  Limitations
 
