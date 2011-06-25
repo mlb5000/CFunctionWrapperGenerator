@@ -69,6 +69,8 @@ So you have your C functions tidily wrapped up into a few files, now what?  Firs
 
 So how does this look?
 
+_Unit/Foo.h_
+
     /* Unit class (has dependencies) */
     class Unit::Foo
     {
@@ -84,7 +86,9 @@ So how does this look?
         IWriteFile &m_writeFile;
         ICloseHandle &m_closeHandle;
     };
- 
+
+_Component/FooIndividual.h_
+
     /* Component class (provides dependencies through individual linkage) */
     class Component::FooIndividual
     {
@@ -98,7 +102,9 @@ So how does this look?
         
         Unit::Foo m_unit;
     };
- 
+
+_Component/FooMaster.h_
+
     /* Component class (provides dependencies through master wrapper) */
     class Component::FooMaster
     {
@@ -111,7 +117,11 @@ So how does this look?
         Unit::Foo m_unit;
     };
 
+**Note**: you would typically only use one pattern, either Individual or Master in your injection, not both.
+
 Now, Foo.bar() can just call its C functions through the interfaces
+
+_Unit/Foo.cpp_
 
     void
     Unit::Foo::Bar()
@@ -145,7 +155,7 @@ Now, Foo.bar() can just call its C functions through the interfaces
         m_closeHandle.myCloseHandle(handle);
     }
 
-and your unit tests for Unit::Foo can now control interactions between your system and the C functions they use.
+and your unit tests for Unit::Foo can now control interactions between it and the C functions it depends on.
 
 ## Limitations
 
