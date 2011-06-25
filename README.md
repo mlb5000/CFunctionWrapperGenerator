@@ -20,8 +20,6 @@ cfunctionwrapper.py functionList [-i include_path] [-n] [-b base_namespace] [-m 
 
 Precondition: The INCLUDE environment variable must be set
 
-    -n = Disable generateGmock
-
     function_file           [Required] Path to a file containing a list of C function names to wrap.  This file contains a
     number of lines in the format: 
 
@@ -33,9 +31,11 @@ Precondition: The INCLUDE environment variable must be set
 
     See the provided cfunctions.txt file for examples.
 
-    include_path            [Default: The INCLUDE environment variable] C compiler include path.  This should be a list of
-                            directories separated by ';' on Windows and ':' on Unix
+    include_path            [Default: The INCLUDE environment variable] Directories to search to find all the actual headers
+                            if your <function_file>. This should be a list of directories separated by ';' on Windows or ':'
+                            on Unix. If this option is not specified, the INCLUDE environment variable is used.
 
+    -n = Disable generateGmock
     generateGmock           [Default: True] Whether or not to generate GMock style mock classes
 
     base_namespace          [Default: ''] Base class namespace
@@ -62,6 +62,6 @@ Precondition: The INCLUDE environment variable must be set
     mock_dir                [Default: 'Mock'] Directory (relative to base_include) where the mock CWrappers file should be
                             written. Must be different than component_dir.
 
-h2.  Limitations
+## Limitations
 
-p. The cppcheck Parser is not perfect and may choke on some files.  If you see an error like: _'I did my best, but I can go no further. Hopefully the collected functions are sufficient for your needs'_ it means that the parser failed on something, but that some symbols were collected.  Hopefully the function prototypes you wished to wrap are included.  If not, submit a bug report and we'll see what we can do.
+The cppcheck Parser is not perfect and may choke on some files.  If you see an error like: _'I did my best, but I can go no further. Hopefully the collected functions are sufficient for your needs'_ it means that the parser failed on something, but that some symbols were collected.  Hopefully the function prototypes you wished to wrap are included.  If not, submit a bug report and we'll see what we can do.
