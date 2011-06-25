@@ -19,7 +19,7 @@ cfunctionwrapper.py Command-line Usage
     cfunctionwrapper.py functionList [-i include_path] [-n] [-b base_namespace] [-m mock_namespace] [-c component_namespace]
     [-p funcPrefix] [-s component_suffix] [-i base_include] [-t interface_dir] [-o component_dir] [-k mock_dir]
 
-Precondition: The INCLUDE environment variable must be set
+Precondition: The INCLUDE environment variable must be set if your do not specify the '-i' parameter.
 
     function_file           [Required] Path to a file containing a list of C function names to wrap.  This file contains a
     number of lines in the format: 
