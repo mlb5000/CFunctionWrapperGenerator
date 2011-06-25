@@ -2,7 +2,7 @@
 
 ##  Purpose
 
-Dependency-injection in C++ is not convenient, especially when you bring "Free" C functions into the mix.  There are several approaches you can use to isolate these functions, but the one I've had the most success with is to create C++ classes whose sole purpose is to wrap calls to C functions.  This approach works quite well, both in minimizing the impact to the production while while also simplifying unit testing, particularly when paired with the [googlemock C++ Mocking framework](http://code.google.com/p/googlemock).
+Dependency-injection in C++ is not convenient, especially when you bring "Free" C functions into the mix.  There are several approaches you can use to isolate these functions, but the one I've had the most success with is to create C++ classes whose sole purpose is to wrap calls to C functions.  This approach works quite well, both in minimizing the impact to the production code, and simplifying unit testing, particularly when paired with the [googlemock C++ Mocking framework](http://code.google.com/p/googlemock).
 
 I've been doing this for some time and have started to feel some pain in the maintenance area.  Wrapper functions are starting to be duplicated between wrapper modules, and classes depending on wrappers are importing functions that they'll never call.  But most of all, building out and maintaining these wrapper classes takes time and is extremely tedious.  So being the lazy developer that I am, I wrote CFWG to do the heavy lifting for me.
 
