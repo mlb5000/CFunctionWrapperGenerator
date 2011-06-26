@@ -24,13 +24,14 @@ Precondition: The INCLUDE environment variable must be set if you do not specify
     function_file           [Required] Path to a file containing a list of C function names to wrap.  This file contains a
                             number of lines in the format: 
 
-    <function> <actual_header> <include_header>
+                            <function> <actual_header> <include_header>
 
-    Function = The function you want to mock
-    Actual Header = The header where the function prototype is actually located
-    Include Header = The base header that you include to ultimately get at the function (can be the same as Actual Header)
+                            Function = The function you want to mock
+                            Actual Header = The header where the function prototype is actually located
+                            Include Header = The base header that you include to ultimately get at the function (can be
+                            the same as Actual Header)
 
-    See the provided cfunctions.txt file for examples.
+                            See the provided cfunctions.txt file for examples.
 
     include_path            [Default: The INCLUDE environment variable] Directories to search to find all the actual headers
                             if your <function_file>. This should be a list of directories separated by ';' on Windows or ':'
