@@ -100,7 +100,7 @@ _Component/FooIndividual.h_
     class Component::FooIndividual
     {
     public:
-        Foo() : m_unit(m_createFileA, m_writeFile, m_closeHandle)
+        Foo() : m_unit(m_createFileA, m_writeFile, m_closeHandle) {}
         
     private:
         CreateFileAWrapper m_createFileA;
@@ -118,7 +118,7 @@ _Component/FooMaster.h_
     class Component::FooMaster
     {
     public:
-        Foo() : m_unit(m_master, m_master, m_master)
+        Foo() : m_unit(m_master, m_master, m_master) {}
         
     private:
         MasterCWrapper m_master;
@@ -167,6 +167,20 @@ _Unit/Foo.cpp_
     }
 
 and your unit tests for Unit::Foo can now control interactions between it and the C functions it depends on.
+
+    #include <Mock/CWrappers.h>
+
+    void
+    Unit::Test::FooUnitTests::ShouldThrowExceptionIfCreateFileFails()
+    {
+        Mock::MasterCWrapper master;
+        Unit::Foo foo(master, master, master);
+
+        EXPECT_CALL(master, myCreateFileA(_, _, _, _, _, _, _))
+            .WillRepeatedly(Return(INVALID_HANDLE_VALUE));
+    
+        ASSERT_THROW(foo.bar(), std::exception);
+    }
 
 ## Limitations
 
