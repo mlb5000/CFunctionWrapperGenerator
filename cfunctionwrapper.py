@@ -98,11 +98,16 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     master.wrappers = wrappers
     aggregates.append(master)
     
+    mock_classes = ''
+    
     for aggregate in aggregates:
         print('Generating {0} interface'.format(aggregate.name))
         interface_classes += aggregate.interface_aggregate()
         print('Generating {0} wrapper component'.format(aggregate.name))
         component_classes += aggregate.component_aggregate()
+        if generateGmock:
+            print('Generating {0} mock wrapper'.format(aggregate.name))
+            mock_classes += aggregate.mock_aggregate()
     
     interface_file = os.path.join(full_interface_dir, 'ICWrappers.h')
     print('Generating interface file {0}'.format(interface_file))
@@ -133,7 +138,7 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     with open(mock_file, 'wt') as file:
         file.write(texttemplates.GMOCK_FILE_TEMPLATE.format(
             base_namespace,
-            master.mock_aggregate()))
+            mock_classes))
     
     print('Done!')
 
