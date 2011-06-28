@@ -1,4 +1,4 @@
-import os, shutil, subprocess, cfunctionwrapper, unittest
+import os, shutil, subprocess, unittest, time, cfunctionwrapper
 
 '''This test suite assumes Visual Studio for now'''
 CPP_COMPILER = 'cl.exe /nologo'
@@ -7,6 +7,7 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 CPP_FILE_FOLDER = os.path.join(FILE_DIR, 'cpp_files')
 CPP_BUILD_FOLDER = os.path.join(FILE_DIR, 'build')
 PATH_SEPARATOR = ';' if os.name == 'nt' else ':'
+PYTHON31 = 'python31'
 
 CPP_FILES = (
     os.path.join(CPP_FILE_FOLDER, 'main.cpp'),
@@ -49,10 +50,12 @@ class TestGenerationCompilation(unittest.TestCase):
         self.failUnless('INCLUDE' in os.environ, msg='''Please configure your compiler environment
         On Windows this might be something like running vsvars32.bat''')
         
-        cfunctionwrapper.generate(
+        subprocess.check_call([
+            PYTHON31,
+            '-O',
+            os.path.join(FILE_DIR, 'cfunctionwrapper.py'),
             'cfunctions.txt',
-            include_path=os.environ['INCLUDE'],
-            base_namespace='Base')
+            '--base_namespace=Base'])
         
         os.environ['INCLUDE'] = os.environ['INCLUDE'] + PATH_SEPARATOR + os.path.join(FILE_DIR, 'src')
         

@@ -2,9 +2,6 @@ import loadpath
 import os
 import sys
 import texttemplates
-import glob
-import subprocess
-import re
 import getopt
 from cpp import ast
 from cfwclasses import *
@@ -19,7 +16,7 @@ USAGE = 'Usage:\n\n' + __file__ + ''' functionList [-i include_path] [-n] [-b ba
 DESCRIPTION = '''
 Generate C++ C-function wrapper classes
 
-PRE: The INCLUDE environment variable must be set
+Precondition: The INCLUDE environment variable must be set
 
 -n = Disable generateGmock
 
@@ -70,20 +67,24 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     prototypes, found_files = getFunctionASTs(include_path, functionsToWrap)
     
     interface_classes = ''
-    mock_functions = ''
     component_classes = ''
     
     print('Generating wrappers')
+    wrappers = []
     for prototype in prototypes:
-        interface_classes += generateInterface(prototype, base_namespace, funcPrefix)
-        component_classes += generateComponent(prototype, base_namespace, component_namespace, funcPrefix, component_suffix)
-        if generateGmock:
-            mock_functions += generateMockFunction(prototype, funcPrefix) + ' ' * 4
+        wrapper = FunctionWrapper(prototype, base_namespace, component_namespace, mock_namespace, funcPrefix, component_suffix)
+        wrappers.append(wrapper)
+        
+        interface_classes += wrapper.interface_class()
+        component_classes += wrapper.component_class()
     
     print('Generating master interface')
-    interface_classes += generateMasterInterface(prototypes, base_namespace)
+    master = FunctionAggregate('MasterC', base_namespace, component_suffix, component_namespace, mock_namespace)
+    master.wrappers = wrappers
+    
+    interface_classes += master.interface_aggregate()
     print('Generating master wrapper component')
-    component_classes += generateMasterWrapper(prototypes, base_namespace, component_namespace, funcPrefix, component_suffix)
+    component_classes += master.component_aggregate()
     
     interface_file = os.path.join(full_interface_dir, 'ICWrappers.h')
     print('Generating interface file {0}'.format(interface_file))
@@ -114,11 +115,7 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     with open(mock_file, 'wt') as file:
         file.write(texttemplates.GMOCK_FILE_TEMPLATE.format(
             base_namespace,
-            generateMasterMock(
-                getFullyQualifiedName((base_namespace, mock_namespace)),
-                base_namespace,
-                mock_functions,
-                component_suffix)))
+            master.mock_aggregate()))
     
     print('Done!')
 
@@ -179,101 +176,8 @@ def getFunctionASTs(include_path, functionsToWrap):
     
     return prototypes, foundFiles
 
-def generateInterface(prototype, base_namespace, funcPrefix):
-    function = texttemplates.INTERFACE_FUNCTION_TEMPLATE.format(
-        prototype.return_type(),
-        funcPrefix,
-        prototype.function_name(),
-        getArgs(prototype),
-        'const')
-    
-    className = 'I' + prototype.function_name()
-    
-    return texttemplates.INTERFACE_CLASS_TEMPLATE.format(
-        getFullyQualifiedName((base_namespace, className)),
-        function,
-        className)
-
-def getArgs(prototype, indent=8):
-    arglist = []
-    for arg in prototype.args():
-        arglist.append(str(arg))
-    
-    base = ',\n' + (' ' * indent)
-    return base.join(arglist)
-
 def getFullyQualifiedName(namespaces):
     return '::'.join(namespaces)
-
-def generateComponent(prototype, base_namespace, component_namespace, funcPrefix, component_suffix):
-    function = texttemplates.COMPONENT_FUNCTION_TEMPLATE.format(
-        prototype.return_type(),
-        funcPrefix,
-        prototype.function_name(),
-        getArgs(prototype),
-        'const',
-        getArgNames(prototype))
-    
-    className = prototype.function_name() + component_suffix
-    
-    return texttemplates.INHERITING_CLASS_TEMPLATE.format(
-        getFullyQualifiedName((base_namespace, component_namespace, className)),
-        getFullyQualifiedName((base_namespace, 'I' + prototype.function_name())),
-        function,
-        className)
-
-def getArgNames(prototype, ident=12):
-    arglist = []
-    for arg in prototype.args():
-        arglist.append(arg.arg_name())
-    
-    base = ',\n' + ' ' * ident
-    return base.join(arglist)
-
-def generateMockFunction(prototype, funcPrefix):
-    numArgs = len(prototype.args())
-    mockType = 'MOCK_CONST_METHOD{0}'.format(numArgs)
-    
-    return texttemplates.GMOCK_DECLARATION_TEMPLATE.format(
-        mockType,
-        funcPrefix + prototype.function_name(),
-        prototype.return_type(),
-        getArgs(prototype))
-
-def generateMasterInterface(prototypes, base_namespace):
-    wrappers = []
-    
-    for p in prototypes:
-        wrappers.append('I' + p.function_name())
-    
-    className = 'IMasterCWrapper'
-    
-    return texttemplates.INHERITING_CLASS_TEMPLATE.format(
-        getFullyQualifiedName((base_namespace, className)),
-        ',\n    public '.join(wrappers),
-        '',
-        className)
-
-def generateMasterWrapper(prototypes, base_namespace, component_namespace, funcPrefix, component_suffix):
-    functions = ''
-    
-    for prototype in prototypes:
-        functions += texttemplates.COMPONENT_FUNCTION_TEMPLATE.format(
-            prototype.return_type(),
-            funcPrefix,
-            prototype.function_name(),
-            getArgs(prototype),
-            'const',
-            getArgNames(prototype))
-        functions += '    '
-    
-    className = 'MasterCWrapper'
-    
-    return texttemplates.INHERITING_CLASS_TEMPLATE.format(
-        getFullyQualifiedName((base_namespace, component_namespace, className)),
-        getFullyQualifiedName((base_namespace, 'I' + className)),
-        functions,
-        className)
 
 def getClassDefinitions(prototypes, indent = 4):
     names = []
@@ -314,47 +218,9 @@ def getNamespaceHierarchy(prototypes, hierarchy, component_suffix):
     
     return hierarchy
 
-def generateMasterMock(hierarchy, base_namespace, mock_functions, component_suffix):
-    className = 'MasterC'+component_suffix
-    return getNamespaces(hierarchy, (className,)) + '\n\n' + \
-        texttemplates.INHERITING_CLASS_TEMPLATE.format(
-            hierarchy+'::'+className,
-            base_namespace+'::'+'I'+'MasterC'+component_suffix,
-            mock_functions,
-            className)
-
-def getNamespaces(full_hierarchy, classes):
-    namespaces = full_hierarchy.split('::')
-    ns_template = 'namespace {0}\n'
-    class_template = 'class {0};'
-    hierarchy = ''
-    
-    ident = 0
-    tab = 4
-    for namespace in namespaces:
-        hierarchy += ' ' * ident + ns_template.format(namespace)
-        hierarchy += ' ' * ident + '{\n'
-        ident += tab
-    
-    hierarchy += ' ' * ident
-    hierarchy += str('\n' + ' ' * ident).join(list(map(lambda x : class_template.format(x), classes)))
-    hierarchy += '\n'
-    ident -= tab
-    
-    for namespace in namespaces:
-        hierarchy += ' ' * (ident) + '}\n'
-        ident -= tab
-    
-    return hierarchy
-
 def usage():
     print(USAGE + '\n' + DESCRIPTION)
 
-    ''' functionList [-i include_path] [-n] [-b base_namespace]
-        [-m mock_namespace] [-c component_namespace] [-p funcPrefix]
-        [-s component_suffix] [-i base_include] [-t interface_dir]
-        [-o component_dir] [-k mock_dir]'''
-        
 if __name__ == '__main__':
     try:
         filename = sys.argv[1]
@@ -395,4 +261,4 @@ if __name__ == '__main__':
         elif o in ('-k', '--mock_dir'):
             kwargs['mock_dir'] = a
     
-    generate(filename, *kwargs)
+    generate(filename, **kwargs)
