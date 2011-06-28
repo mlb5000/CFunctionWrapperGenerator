@@ -1,4 +1,4 @@
-import os, shutil, subprocess, unittest, time, cfunctionwrapper
+import os, shutil, subprocess, unittest
 
 '''This test suite assumes Visual Studio for now'''
 CPP_COMPILER = 'cl.exe /nologo'
