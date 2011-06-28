@@ -1,4 +1,22 @@
-CreateFileA winbase.h windows.h
-CloseHandle winbase.h windows.h
-WriteFile winbase.h windows.h
-CreateEnvironmentBlock userenv.h userenv.h
+Functions:
+    - name:           CreateFileA
+      real_header:    winbase.h
+      include_header: windows.h
+
+    - name:           CloseHandle
+      real_header:    winbase.h
+      include_header: windows.h
+
+    - name:           WriteFile
+      real_header:    winbase.h
+      include_header: windows.h
+
+    - name:           CreateEnvironmentBlock
+      real_header:    userenv.h
+      include_header: userenv.h
+
+Aggregators:
+    - name: FileExists
+      functions:
+          - CreateFileA
+          - CloseHandle

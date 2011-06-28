@@ -5,6 +5,7 @@ import texttemplates
 import getopt
 from cpp import ast
 from cfwclasses import *
+import yaml
 
 PATH_SEPARATOR = ';' if os.name == 'nt' else ':'
 
@@ -62,9 +63,9 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     if generateGmock:
         mkdirIfNotExist(full_mock_dir)
         
-    functionsToWrap = getFunctions(function_file)
+    configuration = yaml.load(open(function_file, 'rt').read())
     print('Parsing files')
-    prototypes, found_files = getFunctionASTs(include_path, functionsToWrap)
+    prototypes, found_files = getFunctionASTs(include_path, configuration['Functions'])
     
     interface_classes = ''
     component_classes = ''
@@ -78,13 +79,30 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
         interface_classes += wrapper.interface_class()
         component_classes += wrapper.component_class()
     
-    print('Generating master interface')
+    aggregates = []
+    for aggregate in configuration['Aggregators']:
+        name = aggregate['name']
+        functions = aggregate['functions']
+        
+        ag_wrappers = []
+        for wrapper in wrappers:
+            if wrapper.prototype.function_name() in functions:
+                ag_wrappers.append(wrapper)
+        
+        aggregator = FunctionAggregate(name, base_namespace, component_suffix, component_namespace, mock_namespace)
+        aggregator.wrappers = ag_wrappers
+        
+        aggregates.append(aggregator)
+    
     master = FunctionAggregate('MasterC', base_namespace, component_suffix, component_namespace, mock_namespace)
     master.wrappers = wrappers
+    aggregates.append(master)
     
-    interface_classes += master.interface_aggregate()
-    print('Generating master wrapper component')
-    component_classes += master.component_aggregate()
+    for aggregate in aggregates:
+        print('Generating {0} interface'.format(aggregate.name))
+        interface_classes += aggregate.interface_aggregate()
+        print('Generating {0} wrapper component'.format(aggregate.name))
+        component_classes += aggregate.component_aggregate()
     
     interface_file = os.path.join(full_interface_dir, 'ICWrappers.h')
     print('Generating interface file {0}'.format(interface_file))
@@ -92,10 +110,11 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
         file.write(texttemplates.INTERFACE_FILE_TEMPLATE.format(
             base_namespace,
             interface_classes,
-            getClassDefinitions(prototypes),
+            getInterfaceDefinitions(prototypes, aggregates),
             getIncludes(found_files)))
     
     component_file = os.path.join(full_component_dir, 'CWrappers.h')
+    
     print('Generating component file {0}'.format(component_file))
     with open(component_file, 'wt') as file:
         file.write(texttemplates.COMPONENT_FILE_TEMPLATE.format(
@@ -103,9 +122,8 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
             getIncludes(found_files),
             component_classes,
             getNamespaceHierarchy(
-                prototypes,
-                getFullyQualifiedName((base_namespace, component_namespace)),
-                component_suffix)))
+                getComponentDefinitions(prototypes, aggregates, component_suffix),
+                getFullyQualifiedName((base_namespace, component_namespace)))))
     
     if not generateGmock:
         return
@@ -139,7 +157,11 @@ def getFunctionASTs(include_path, functionsToWrap):
     filesToFind = []
     funcsToFind = []
     
-    for func, real_loc, include in functionsToWrap:
+    for item in functionsToWrap:
+        func = item['name']
+        real_loc = item['real_header']
+        include = item['include_header']
+        
         if (real_loc, include) not in filesToFind:
             filesToFind.append((real_loc, include))
         if func not in funcsToFind:
@@ -179,24 +201,35 @@ def getFunctionASTs(include_path, functionsToWrap):
 def getFullyQualifiedName(namespaces):
     return '::'.join(namespaces)
 
-def getClassDefinitions(prototypes, indent = 4):
+def getInterfaceDefinitions(prototypes, aggregators, indent = 4):
     names = []
     for prototype in prototypes:
-        names.append('class {0};'.format('I' + prototype.function_name()))
+        names.append('class {0};'.format(INTERFACE_PREFIX + prototype.function_name()))
     
-    names.append('class IMasterCWrapper;')
+    for aggregate in aggregators:
+        names.append('class {0};'.format(aggregate.interface_name()))
     
     base = '\n' + (' ' * indent)
     
     return base.join(names)
 
+def getComponentDefinitions(prototypes, aggregators, component_suffix, indent = 4):
+    names = []
+    for prototype in prototypes:
+        names.append(prototype.function_name() + component_suffix)
+    
+    for aggregate in aggregators:
+        names.append(aggregate.component_name())
+    
+    return names
+
 def getIncludes(includes):
     return '\n'.join(list(map(lambda x : '#include <{0}>'.format(x), includes)))
 
-def getNamespaceHierarchy(prototypes, hierarchy, component_suffix):
+def getNamespaceHierarchy(classes, hierarchy):
     namespaces = hierarchy.split('::')
     ns_template = 'namespace {0}\n'
-    class_template = 'class {0};'.format('{0}' + component_suffix)
+    class_template = 'class {0};'
     hierarchy = ''
     
     ident = 0
@@ -207,8 +240,7 @@ def getNamespaceHierarchy(prototypes, hierarchy, component_suffix):
         ident += tab
     
     hierarchy += ' ' * ident
-    hierarchy += str('\n' + ' ' * ident).join(list(map(lambda x : class_template.format(x.function_name()), prototypes)))
-    hierarchy += str('\n' + ' ' * ident) + class_template.format('MasterC')
+    hierarchy += str('\n' + ' ' * ident).join(list(map(lambda x : class_template.format(x), classes)))
     hierarchy += '\n'
     ident -= tab
     
