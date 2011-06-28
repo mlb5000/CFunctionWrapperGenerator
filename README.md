@@ -24,13 +24,14 @@ Precondition: The INCLUDE environment variable must be set if you do not specify
     function_file           [Required] Path to a file containing a list of C function names to wrap.  This file contains a
                             number of lines in the format: 
 
-    <function> <actual_header> <include_header>
+                            <function> <actual_header> <include_header>
 
-    Function = The function you want to mock
-    Actual Header = The header where the function prototype is actually located
-    Include Header = The base header that you include to ultimately get at the function (can be the same as Actual Header)
+                            Function = The function you want to mock
+                            Actual Header = The header where the function prototype is actually located
+                            Include Header = The base header that you include to ultimately get at the function (can be
+                            the same as Actual Header)
 
-    See the provided cfunctions.txt file for examples.
+                            See the provided cfunctions.txt file for examples.
 
     include_path            [Default: The INCLUDE environment variable] Directories to search to find all the actual headers
                             if your <function_file>. This should be a list of directories separated by ';' on Windows or ':'
@@ -66,9 +67,9 @@ Precondition: The INCLUDE environment variable must be set if you do not specify
 
 ### Using the Wrappers
 
-So you have your C functions tidily wrapped up into a few files, now what?  First, to really make your C++ classes testable with the wrappers, you'll need to update your class' to constructor (or whatever other dependency-injection mechanism you have) to take in references to the interface(s) containing C functions you care about.  For example, in the provided test example the class depends on three C functions: CreateFileA, WriteFile, and CloseHandle.  By providing these to CFWG three interfaces are created, ICreateFileA, IWriteFile, and ICloseHandle, as well as three components that implement the interfaces CreateFileAWrapper, WriteFileWrapper, and CloseHandleWrapper.
+So you have your C functions tidily wrapped up into a few files, now what?  First, to really make your C++ classes testable with the wrappers, you'll need to update your class' constructor (or whatever other dependency-injection mechanism you have) to take in references to the interface(s) containing the C functions you care about.  For example, in the provided test example the class depends on three C functions: CreateFileA, WriteFile, and CloseHandle.  By providing these to CFWG three interfaces are created: ICreateFileA, IWriteFile, and ICloseHandle, as well as three components that implement those interfaces: CreateFileAWrapper, WriteFileWrapper, and CloseHandleWrapper.
 
-There is also an IMasterCWrapper interface and corresponding MasterCWrapper component generated, but they are more for convenience during unit testing.  I wouldn't recommend having your classes depend on IMasterCWrapper directly, particlarly for shared libraries as this may pull in linkage that may not be necessary for all users.
+There is also an IMasterCWrapper interface and corresponding MasterCWrapper component generated, but they are more for convenience during unit testing.  I wouldn't recommend having your classes depend on IMasterCWrapper directly, particlarly for shared libraries, as this will pull in linkage that may not be necessary for all users.
 
 So how does this look?
 
@@ -100,7 +101,7 @@ _Component/FooIndividual.h_
     class Component::FooIndividual
     {
     public:
-        Foo() : m_unit(m_createFileA, m_writeFile, m_closeHandle)
+        Foo() : m_unit(m_createFileA, m_writeFile, m_closeHandle) {}
         
     private:
         CreateFileAWrapper m_createFileA;
@@ -118,7 +119,7 @@ _Component/FooMaster.h_
     class Component::FooMaster
     {
     public:
-        Foo() : m_unit(m_master, m_master, m_master)
+        Foo() : m_unit(m_master, m_master, m_master) {}
         
     private:
         MasterCWrapper m_master;
@@ -167,6 +168,20 @@ _Unit/Foo.cpp_
     }
 
 and your unit tests for Unit::Foo can now control interactions between it and the C functions it depends on.
+
+    #include <Mock/CWrappers.h>
+
+    void
+    Unit::Test::FooUnitTests::ShouldThrowExceptionIfCreateFileFails()
+    {
+        Mock::MasterCWrapper master;
+        Unit::Foo foo(master, master, master);
+
+        EXPECT_CALL(master, myCreateFileA(_, _, _, _, _, _, _))
+            .WillRepeatedly(Return(INVALID_HANDLE_VALUE));
+    
+        ASSERT_THROW(foo.bar(), std::exception);
+    }
 
 ## Limitations
 
