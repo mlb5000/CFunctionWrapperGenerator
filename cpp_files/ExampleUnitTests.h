@@ -5,6 +5,7 @@
 
 #include "Example.h"
 #include <Base/Mock/CWrappers.h>
+#include <gtest/gtest.h>
 
 namespace Base
 {
@@ -16,5 +17,17 @@ namespace Base
         }
     }
 }
+
+class Base::Unit::Test::ExampleUnitTests : public ::testing::Test
+{
+protected:
+    ExampleUnitTests() : m_unit(m_masterMock, m_masterMock, m_masterMock) {}
+    virtual ~ExampleUnitTests() {}
+
+    virtual void SetUp();
+    
+    ::testing::NiceMock<Base::Mock::MasterCWrapper> m_masterMock;
+    Example m_unit;
+};
 
 #endif
