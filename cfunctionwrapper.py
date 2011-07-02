@@ -8,11 +8,11 @@ from cfwclasses import *
 import yaml
 
 PATH_SEPARATOR = ';' if os.name == 'nt' else ':'
+BASE_INCLUDE = 'CWrappers'
 
 USAGE = 'Usage:\n\n' + __file__ + ''' functionList [-i include_path] [-n] [-b base_namespace]
         [-m mock_namespace] [-c component_namespace] [-p funcPrefix]
-        [-s component_suffix] [-i base_include] [-t interface_dir]
-        [-o component_dir] [-k mock_dir]'''
+        [-s component_suffix]'''
 
 DESCRIPTION = '''
 Generate C++ C-function wrapper classes
@@ -38,25 +38,18 @@ funcPrefix              [Default: 'my'] Prefix to wrapper functions. This is use
                         to prevent colliding with the wrapped C function
 component_suffix        [Default: 'Wrapper'] Suffix that will be appended to class
                         names of generated Component classes
-base_include            [Default: 'src/Base'] Base include directory where generated
-                        wrappers will be stored
-interface_dir           [Default: ''] Directory (relative to base_include) where
-                        the ICWrappers interface file will be written
-component_dir           [Default: 'Component'] Directory (relative to base_include)
-                        where the component CWrappers file should be written to
-mock_dir                [Default: 'Mock'] Directory (relative to base_include) where
-                        the mock CWrappers file should be written to.  Must be
-                        different than component_dir.
 '''
-def generate(function_file, include_path = '', generateGmock=True, base_namespace = '', mock_namespace = 'Mock', component_namespace = 'Component', funcPrefix='my', component_suffix = 'Wrapper', base_include = 'src/Base', interface_dir='', component_dir='Component', mock_dir='Mock'):
+def generate(function_file, include_path = '', generateGmock=True, base_namespace = '', mock_namespace = 'Mock', component_namespace = 'Component', funcPrefix='my', component_suffix = 'Wrapper'):
     if include_path == '':
         include_path = getIncludeEnvVar()
     
-    full_interface_dir = os.path.normpath(os.path.join(base_include, interface_dir))
-    full_component_dir = os.path.normpath(os.path.join(base_include, component_dir))
-    full_mock_dir = os.path.normpath(os.path.join(base_include, mock_dir))
+    fullComponentNamespace = getFullyQualifiedName((base_namespace, component_namespace))
+    fullMockNamespace = getFullyQualifiedName((base_namespace, mock_namespace))
     
-    mkdirIfNotExist(base_include)
+    full_interface_dir = os.path.join(BASE_INCLUDE, os.path.normpath(getPathFromNamespace(base_namespace)))
+    full_component_dir = os.path.join(BASE_INCLUDE, os.path.normpath(getPathFromNamespace(fullComponentNamespace)))
+    full_mock_dir = os.path.join(BASE_INCLUDE, os.path.normpath(getPathFromNamespace(fullMockNamespace)))
+    
     mkdirIfNotExist(full_interface_dir)
     mkdirIfNotExist(full_component_dir)
     
@@ -113,22 +106,24 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     print('Generating interface file {0}'.format(interface_file))
     with open(interface_file, 'wt') as file:
         file.write(texttemplates.INTERFACE_FILE_TEMPLATE.format(
-            base_namespace,
-            interface_classes,
-            getInterfaceDefinitions(prototypes, aggregates),
-            getIncludes(found_files)))
+            getHeaderGuard(base_namespace),
+            getIncludes(found_files),
+            getNamespaceHierarchy(
+                collectInterfaceNames(prototypes, aggregates),
+                base_namespace),
+            interface_classes))
     
     component_file = os.path.join(full_component_dir, 'CWrappers.h')
-    
     print('Generating component file {0}'.format(component_file))
     with open(component_file, 'wt') as file:
         file.write(texttemplates.COMPONENT_FILE_TEMPLATE.format(
-            base_namespace,
+            getHeaderGuard(fullComponentNamespace),
             getIncludes(found_files),
-            component_classes,
+            getPathFromNamespace(base_namespace),
             getNamespaceHierarchy(
                 getComponentDefinitions(prototypes, aggregates, component_suffix),
-                getFullyQualifiedName((base_namespace, component_namespace)))))
+                fullComponentNamespace),
+            component_classes))
     
     if not generateGmock:
         return
@@ -137,7 +132,8 @@ def generate(function_file, include_path = '', generateGmock=True, base_namespac
     print('Generating mock file {0}'.format(mock_file))
     with open(mock_file, 'wt') as file:
         file.write(texttemplates.GMOCK_FILE_TEMPLATE.format(
-            base_namespace,
+            getHeaderGuard(fullMockNamespace),
+            getPathFromNamespace(base_namespace),
             mock_classes))
     
     print('Done!')
@@ -206,17 +202,15 @@ def getFunctionASTs(include_path, functionsToWrap):
 def getFullyQualifiedName(namespaces):
     return '::'.join(namespaces)
 
-def getInterfaceDefinitions(prototypes, aggregators, indent = 4):
+def collectInterfaceNames(prototypes, aggregators):
     names = []
     for prototype in prototypes:
-        names.append('class {0};'.format(INTERFACE_PREFIX + prototype.function_name()))
+        names.append(INTERFACE_PREFIX + prototype.function_name())
     
     for aggregate in aggregators:
-        names.append('class {0};'.format(aggregate.interface_name()))
+        names.append(aggregate.interface_name())
     
-    base = '\n' + (' ' * indent)
-    
-    return base.join(names)
+    return names
 
 def getComponentDefinitions(prototypes, aggregators, component_suffix, indent = 4):
     names = []
@@ -228,8 +222,14 @@ def getComponentDefinitions(prototypes, aggregators, component_suffix, indent = 
     
     return names
 
+def getHeaderGuard(namespace):
+    return '_'.join(namespace.split('::')).upper()
+
 def getIncludes(includes):
     return '\n'.join(list(map(lambda x : '#include <{0}>'.format(x), includes)))
+
+def getPathFromNamespace(namespace):
+    return '/'.join(namespace.split('::'))
 
 def getNamespaceHierarchy(classes, hierarchy):
     namespaces = hierarchy.split('::')
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     
     if (len(sys.argv) > 2):
         try:
-            opts, args = getopt.getopt(sys.argv[2:], 'i:nb:m:c:p:s:i:t:o:k:', ['include_path=', 'disableGMock', 'base_namespace=', 'mock_namespace=', 'component_namespace=', 'funcPrefix=', 'component_suffix=', 'base_include=', 'interface_dir=', 'component_dir=', 'mock_dir='])
+            opts, args = getopt.getopt(sys.argv[2:], 'i:nb:m:c:p:s:', ['include_path=', 'disableGMock', 'base_namespace=', 'mock_namespace=', 'component_namespace=', 'funcPrefix=', 'component_suffix='])
         except getopt.GetoptError as err:
             print(err)
             usage()
@@ -289,13 +289,5 @@ if __name__ == '__main__':
             kwargs['funcPrefix'] = a
         elif o in ('-s', '--component_suffix'):
             kwargs['component_suffix'] = a
-        elif o in ('-i', '--base_include'):
-            kwargs['base_include'] = a
-        elif o in ('-t', '--interface_dir'):
-            kwargs['interface_dir'] = a
-        elif o in ('-o', '--component_dir'):
-            kwargs['component_dir'] = a
-        elif o in ('-k', '--mock_dir'):
-            kwargs['mock_dir'] = a
     
     generate(filename, **kwargs)

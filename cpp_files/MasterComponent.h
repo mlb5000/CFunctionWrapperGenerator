@@ -4,7 +4,7 @@
 #define BASE_COMPONENT_MASTEREXAMPLE_H
 
 #include "MasterExample.h"
-#include <Base/Component/CWrappers.h>
+#include <Base/Sub/Component/Sub2/CWrappers.h>
 
 namespace Base
 {
@@ -23,7 +23,7 @@ public:
     void run() const { m_unit.run(); }
     
 private:
-    Base::Component::MasterCWrapper m_master;
+    Base::Sub::Component::Sub2::MasterCWrapper m_master;
     
     Unit::MasterExample m_unit;
 };

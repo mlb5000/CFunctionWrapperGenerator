@@ -17,7 +17,7 @@ CFWG requires Python 3.X (namely the str.format function).
 cfunctionwrapper.py Command-line Usage
 
     cfunctionwrapper.py function_file [-i include_path] [-n] [-b base_namespace] [-m mock_namespace] [-c component_namespace]
-    [-p funcPrefix] [-s component_suffix] [-i base_include] [-t interface_dir] [-o component_dir] [-k mock_dir]
+    [-p funcPrefix] [-s component_suffix]
 
 Precondition: The INCLUDE environment variable must be set if you do not specify the '-i' parameter.
 
@@ -53,17 +53,6 @@ Precondition: The INCLUDE environment variable must be set if you do not specify
 
     component_suffix        [Default: 'Wrapper'] Suffix that will be appended to class names of generated Component classes
                             as well as the IMasterC<suffix> master interface.
-
-    base_include            [Default: 'src/Base'] Base include directory where generated wrappers will be stored
-
-    interface_dir           [Default: ''] Directory (relative to base_include) where the ICWrappers interface file will be
-                            written
-
-    component_dir           [Default: 'Component'] Directory (relative to base_include) where the component CWrappers file
-                            should be written
-
-    mock_dir                [Default: 'Mock'] Directory (relative to base_include) where the mock CWrappers file should be
-                            written. Must be different than component_dir.
 
 ### Using the Wrappers
 

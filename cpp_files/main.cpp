@@ -9,6 +9,6 @@ int main()
     example.run();
     masterExample.run();
     
-    Base::Component::MasterCWrapper master;
+    Base::Sub::Component::Sub2::MasterCWrapper master;
     Base::Unit::Example useMasterInPlaceOfSingle(master, master, master);
 }

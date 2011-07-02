@@ -4,7 +4,7 @@
 #define BASE_UNIT_TEST_EXAMPLEUNITTESTS_H
 
 #include "Example.h"
-#include <Base/Mock/CWrappers.h>
+#include <Base/Sub/Mock/Sub2/CWrappers.h>
 #include <gtest/gtest.h>
 
 namespace Base
@@ -26,7 +26,7 @@ protected:
 
     virtual void SetUp();
     
-    ::testing::NiceMock<Base::Mock::MasterCWrapper> m_masterMock;
+    ::testing::NiceMock<Base::Sub::Mock::Sub2::MasterCWrapper> m_masterMock;
     Example m_unit;
 };
 

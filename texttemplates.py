@@ -1,8 +1,9 @@
 '''
 String template used for the GMock mock file output
 
-{0} = Base Class Namespace
-{1} = Generated mock classes
+{0} = Mock Namespace Header Guard
+{1} = ICWrappers.h include directory
+{2} = Generated Mock Classes
 '''
 GMOCK_FILE_TEMPLATE = \
 '''/** @file
@@ -12,25 +13,26 @@ GMOCK_FILE_TEMPLATE = \
 
 #pragma once
 
-#ifndef {0}_MOCK_CWRAPPERS_H
-#define {0}_MOCK_CWRAPPERS_H
+#ifndef {0}_CWRAPPERS_H
+#define {0}_CWRAPPERS_H
 
 #include <gmock/gmock.h>
-#include <{0}/ICWrappers.h>
+#include <{1}/ICWrappers.h>
 
-{1}
+{2}
 
-#endif
+#endif // {0}_CWRAPPERS_H
 
 '''
 
 '''
 String template used for the Component file output
 
-{0} = Base Class Namespace
+{0} = Namespace header guard
 {1} = Necessary headers (include real C function prototypes)
-{2} = Component Classes
+{2} = ICWrappers.h include directory
 {3} = Namespace hierarchy with class declarations
+{4} = Component Classes
 '''
 COMPONENT_FILE_TEMPLATE = \
 '''/** @file
@@ -40,14 +42,14 @@ COMPONENT_FILE_TEMPLATE = \
 
 #pragma once
 
-#ifndef {0}_COMPONENT_CWRAPPERS_H
-#define {0}_COMPONENT_CWRAPPERS_H
+#ifndef {0}_CWRAPPERS_H
+#define {0}_CWRAPPERS_H
 
 {1}
-#include <{0}/ICWrappers.h>
+#include <{2}/ICWrappers.h>
 
 {3}
-{2}
+{4}
 
 #endif
 
@@ -56,10 +58,10 @@ COMPONENT_FILE_TEMPLATE = \
 '''
 String template used for the interface file
 
-{0} = Base Class Namespace
-{1} = Interface Class Defintions
-{2} = List of class declarations (e.g. class ISomething;)
-{3} = List of include directives
+{0} = Namespace Header Guard
+{1} = List of include directives
+{2} = Namespace Hierarchy
+{3} = Interface Class Defintions
 '''
 INTERFACE_FILE_TEMPLATE = \
 '''/** @file
@@ -72,16 +74,13 @@ INTERFACE_FILE_TEMPLATE = \
 #ifndef {0}_ICWRAPPERS_H
 #define {0}_ICWRAPPERS_H
 
-{3}
-
-namespace {0}
-{{
-    {2}
-}}
-
 {1}
 
-#endif
+{2}
+
+{3}
+
+#endif // {0}_ICWRAPPERS_H
 
 '''
 

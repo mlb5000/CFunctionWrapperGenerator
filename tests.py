@@ -48,17 +48,14 @@ class TestGenerationCompilation(unittest.TestCase):
     def setUp(self):
         self.origwd = os.getcwd()
         try:
-            shutil.move('src', 'src_old')
-            shutil.rmtree('src_old', ignore_errors=True)
+            shutil.rmtree('CWrappers', ignore_errors=True)
         except IOError:
             pass
             
         try:
-            shutil.move('build', 'build_old')
-            shutil.rmtree('build_old', ignore_errors=True)
+            shutil.rmtree('build', ignore_errors=True)
         except IOError:
             pass
-        os.mkdir('src')
         os.mkdir('build')
 
     def tearDown(self):
@@ -73,11 +70,13 @@ class TestGenerationCompilation(unittest.TestCase):
             '-O',
             os.path.join(FILE_DIR, 'cfunctionwrapper.py'),
             'cfunctions.txt',
-            '--base_namespace=Base'])
+            '--base_namespace=Base::Sub',
+            '--mock_namespace=Mock::Sub2',
+            '--component_namespace=Component::Sub2'])
         
         os.environ['INCLUDE'] = PATH_SEPARATOR.join((
             os.environ['INCLUDE'],
-            os.path.normpath(os.path.join(FILE_DIR, 'src')),
+            os.path.normpath(os.path.join(FILE_DIR, 'CWrappers')),
             os.path.normpath(os.path.join(FILE_DIR, 'gmock-1.6.0/include')),
             os.path.normpath(os.path.join(FILE_DIR, 'gmock-1.6.0')),
             os.path.normpath(os.path.join(FILE_DIR, 'gmock-1.6.0/gtest/include')),

@@ -3,7 +3,7 @@
 #ifndef BASE_UNIT_MASTEREXAMPLE_H
 #define BASE_UNIT_MASTEREXAMPLE_H
 
-#include <Base/ICWrappers.h>
+#include <Base/Sub/ICWrappers.h>
 
 namespace Base
 {
@@ -16,13 +16,13 @@ namespace Base
 class Base::Unit::MasterExample
 {
 public:
-    MasterExample(IMasterCWrapper &master) : m_master(master)
+    MasterExample(Sub::IMasterCWrapper &master) : m_master(master)
     {}
 
     void run() const;
 
 private:
-    IMasterCWrapper &m_master;
+    Sub::IMasterCWrapper &m_master;
 };
 
 #endif
