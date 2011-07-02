@@ -60,6 +60,8 @@ So you have your C functions tidily wrapped up into a few files, now what?  Firs
 
 There is also an IMasterCWrapper interface and corresponding MasterCWrapper component generated, but they are more for convenience during unit testing.  I wouldn't recommend having your classes depend on IMasterCWrapper directly, particlarly for shared libraries, as this will pull in linkage that may not be necessary for all users.
 
+NOTE: Generated files are written into the *CWrappers* directory under the current working directory for the script, so add it to your INCLUDE path.
+
 So how does this look?
 
 _Unit/Foo.h_
