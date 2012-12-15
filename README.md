@@ -176,4 +176,4 @@ and your unit tests for Unit::Foo can now control interactions between it and th
 
 ## Limitations
 
-CFWG relies on the cppcheck AST parser to parse the C headers.  It's pretty good, but it's perfect and may choke on some files.  If you see an error like: *'I did my best, but I can go no further. Hopefully the collected functions are sufficient for your needs'* it means that the parser failed on something, but that some symbols were collected.  Hopefully the function prototypes you wished to wrap we successfully collected.  If not, submit a bug report and we'll see what we can do.
+CFWG relies on the cppcheck AST parser to parse the C headers.  It's pretty good, but it's not perfect and may choke on some files.  If you see an error like: *'I did my best, but I can go no further. Hopefully the collected functions are sufficient for your needs'* it means that the parser failed on something, but that some symbols were collected.  Hopefully the function prototypes you wished to wrap we successfully collected.  If not, submit a bug report and we'll see what we can do.
